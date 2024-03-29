@@ -5,6 +5,7 @@ import AuthContext from "@/app/context/AuthContext";
 import ToasterContext from "@/app/context/ToasterContext";
 import SignupModal from "@/app/components/modals/SignupModal";
 import getCurrentUser from "@/app/actions/getCurrentUser";
+import LoginModal from "@/app//components/modals/LoginModal";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
@@ -23,6 +24,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <ToasterContext />
           {/* モーダル */}
           <SignupModal />
+          <LoginModal />
           <div className="flex min-h-screen flex-col">
             <Navigation currentUser={currentUser} />
 

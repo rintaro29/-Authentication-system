@@ -1,33 +1,31 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { FcGoogle } from "react-icons/fc";
 import { toast } from "react-hot-toast";
+import { signIn } from "next-auth/react";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
+import { FcGoogle } from "react-icons/fc";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import useLoginModal from "@/app/hooks/useLoginModal";
 import useSignupModal from "@/app/hooks/useSignupModal";
+import useLoginModal from "@/app/hooks/useLoginModal";
 import Modal from "@/app/components/modals/Modal";
 import Input from "@/app/components/input/Input";
 import Button from "@/app/components/button/Button";
-import axios from "axios";
 import * as z from "zod";
 
 // 入力データの検証ルールを定義
 const schema = z.object({
-  name: z.string().min(2, { message: "2文字以上入力する必要があります。" }),
   email: z.string().email({ message: "メールアドレスの形式ではありません。" }),
   password: z.string().min(6, { message: "6文字以上入力する必要があります。" }),
 });
 
-// サインアップモーダル
-const SignupModal = () => {
+// ログインモーダル
+const LoginModal = () => {
   const router = useRouter();
-  const signupModal = useSignupModal();
   const loginModal = useLoginModal();
+  const signupModal = useSignupModal();
   const [loading, setLoading] = useState(false);
 
   const {
@@ -36,37 +34,37 @@ const SignupModal = () => {
     formState: { errors },
   } = useForm<FieldValues>({
     // 初期値
-    defaultValues: { name: "", email: "", password: "" },
+    defaultValues: { email: "", password: "" },
     // 入力値の検証
     resolver: zodResolver(schema),
   });
 
-  // ログインモーダルを開く
+  // サインアップモーダルを開く
   const onToggle = useCallback(() => {
-    signupModal.onClose();
-    loginModal.onOpen();
-  }, [signupModal, loginModal]);
+    loginModal.onClose();
+    signupModal.onOpen();
+  }, [loginModal, signupModal]);
 
   // 送信
   const onSubmit: SubmitHandler<FieldValues> = async (data) => {
     setLoading(true);
 
     try {
-      // サインアップ
-      const res = await axios.post("/api/signup", data);
+      // ログイン
+      const res = await signIn("credentials", {
+        ...data,
+        redirect: false,
+      });
 
-      if (res.status === 200) {
-        toast.success("アカウントを作成しました!");
-
-        // sginupしたらログイン
-        await signIn("credentials", {
-          ...data,
-          redirect: false,
-        });
-
-        signupModal.onClose();
-        router.refresh();
+      // エラーチェック
+      if (res?.error) {
+        toast.error("エラーが発生しました。" + res.error);
+        return;
       }
+
+      toast.success("ログインしました!");
+      loginModal.onClose();
+      router.refresh();
     } catch (error) {
       toast.error("エラーが発生しました。" + error);
     } finally {
@@ -74,11 +72,9 @@ const SignupModal = () => {
     }
   };
 
-  // モーダルの内容
+  // モーダルの中身
   const bodyContent = (
     <div className="flex flex-col gap-4">
-      <Input id="name" label="名前" disabled={loading} register={register} errors={errors} required />
-
       <Input id="email" label="メールアドレス" disabled={loading} register={register} errors={errors} required />
 
       <Input
@@ -93,17 +89,17 @@ const SignupModal = () => {
     </div>
   );
 
-  // フッターの内容
+  // フッターの中身
   const footerContent = (
     <div className="mt-3 flex flex-col gap-4">
       <hr />
       {/* Googleログイン */}
       <Button outline label="Googleでログイン" icon={FcGoogle} onClick={() => signIn("google")} />
 
-      {/* ログインリンク */}
+      {/* サインアップリンク */}
       <div className="mt-4 text-center">
         <div onClick={onToggle} className="cursor-pointer text-sm text-neutral-500 hover:underline">
-          ログインする
+          アカウントを作成する
         </div>
       </div>
     </div>
@@ -112,10 +108,10 @@ const SignupModal = () => {
   return (
     <Modal
       disabled={loading}
-      isOpen={signupModal.isOpen}
-      title="サインアップ"
-      primaryLabel="サインアップ"
-      onClose={signupModal.onClose}
+      isOpen={loginModal.isOpen}
+      title="ログイン"
+      primaryLabel="ログイン"
+      onClose={loginModal.onClose}
       onSubmit={handleSubmit(onSubmit)}
       body={bodyContent}
       footer={footerContent}
@@ -123,4 +119,4 @@ const SignupModal = () => {
   );
 };
 
-export default SignupModal;
+export default LoginModal;
